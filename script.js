@@ -21,27 +21,6 @@ let splatStack = [];
 const  { gl, ext } = getWebGLContext(canvas);
 startGUI();
 
-// handling permissions for video
-const constraints = {
-    video: true
-  };
-  
-  const video = document.querySelector('video');
-  
-  function handleSuccess(stream) {
-    video.srcObject = stream;
-    console.log("Streaming video", video.srcObject);
-  }
-  
-  function handleError(error) {
-    console.error('Reeeejected!', error);
-  }
-  
-  navigator.mediaDevices.getUserMedia(constraints).
-    then(handleSuccess).catch(handleError);
-
-
-
 function getWebGLContext (canvas) {
     const params = { alpha: false, depth: false, stencil: false, antialias: false };
 
