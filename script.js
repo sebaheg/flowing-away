@@ -518,21 +518,15 @@ const blit = (() => {
     }
 })();
 
-let lastTime = Date.now();
-multipleSplats(parseInt(Math.random() * 20) + 5);
-update();
-
 function update () {
     resizeCanvas();
-
-    const dt = Math.min((Date.now() - lastTime) / 1000, 0.016);
-    lastTime = Date.now();
 
     gl.viewport(0, 0, textureWidth, textureHeight);
 
     if (splatStack.length > 0)
         multipleSplats(splatStack.pop());
 
+    // Navier-Stokes solver
     advectionProgram.bind();
     gl.uniform2f(advectionProgram.uniforms.texelSize, 1.0 / textureWidth, 1.0 / textureHeight);
     gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read[2]);
@@ -700,3 +694,6 @@ window.addEventListener('touchend', (e) => {
             if (touches[i].identifier == pointers[j].id)
                 pointers[j].down = false;
 });
+
+// multipleSplats(parseInt(Math.random() * 20) + 5);
+update();
