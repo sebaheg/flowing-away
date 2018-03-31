@@ -90,6 +90,12 @@ function draw() {
   stroke(0);
   ellipse(lerpX, lerpY, 50, 50);
 
+  fill(0, 0, 0, 1);
+  var angle = atan2(motionY - lerpY, motionX - lerpX); //gets the angle of the line
+  translate(lerpX, lerpY); //translates to the destination vertex
+  rotate(angle+HALF_PI); //rotates the arrow point
+  triangle(-50*0.5, 50, 50*0.5, 50, 0, -50/2); //draws the arrow point as a triangle
+
   // Save frame for the next cycle
   frame1.copy(frame2, 0, 0, frame2.width, frame2.height, 0, 0, frame1.width, frame1.height); // Before we read the new frame, we always save the previous frame for comparison!
 }

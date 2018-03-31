@@ -11,12 +11,13 @@ let config = {
     PRESSURE_DISSIPATION: 0.8,
     PRESSURE_ITERATIONS: 25,
     CURL: 30,
-    SPLAT_RADIUS: 0.001,
+    SPLAT_RADIUS: 0.004,
     DT: 0.016
 }
 
 let pointers = [];
 let splatStack = [];
+let motionSplatOn = false;
 
 const  { gl, ext } = getWebGLContext(canvas);
 startGUI();
@@ -124,13 +125,21 @@ function startGUI () {
     gui.add(config, 'PRESSURE_DISSIPATION', 0.0, 1.0).name('pressure diffusion');
     gui.add(config, 'PRESSURE_ITERATIONS', 1, 60).name('iterations');
     gui.add(config, 'CURL', 0, 50).name('vorticity').step(1);
-    gui.add(config, 'SPLAT_RADIUS', 0.0001, 0.01).name('splat radius');
+    gui.add(config, 'SPLAT_RADIUS', 0.001, 0.01).name('splat radius');
     gui.add(config, 'DT', 0.01, 0.1).name('dt');
+
+    let motionSplat = gui.add({ fun: () => {
+        if (motionSplatOn)
+          motionSplatOn=false;
+        else
+          motionSplatOn=true;
+        }
+    }, 'fun').name('motion splat');
 
     let randomSplats = gui.add({ fun: () => {
             splatStack.push(parseInt(Math.random() * 20) + 5);
         }
-    }, 'fun').name('Random splats');
+    }, 'fun').name('random splats');
 
     gui.close();
 }
@@ -519,9 +528,12 @@ const blit = (() => {
 })();
 
 function update () {
-    resizeCanvas();
+  //  resizeCanvas();
 
     gl.viewport(0, 0, textureWidth, textureHeight);
+
+    if (motionSplatOn)
+        motionSplat();
 
     if (splatStack.length > 0)
         multipleSplats(splatStack.pop());
@@ -622,6 +634,27 @@ function splat (x, y, dx, dy, color) {
 }
 
 // This is where we should add input from camera.
+function motionSplat () {
+    test ();
+    // const color = [Math.random() * 10, Math.random() * 10, Math.random() * 10];
+    // const x = canvas.width / 2;
+    // const y = canvas.height / 2;
+    // const dx = 1000;
+    // const dy = 1000;
+    // splat(x, y, dx, dy, color);
+    // if (pointers[0].down = true) {
+    //   pointers[0].down = false;
+    // };
+    // pointers[0].down = true;
+    //
+    // pointers[0].color = [Math.random() + 0.2, Math.random() + 0.2, Math.random() + 0.2];
+    // pointers[0].moved = pointers[0].down;
+    // pointers[0].dx = 10.0;
+    // pointers[0].dy = 0.0;
+    // pointers[0].x = canvas.width / 2;
+    // pointers[0].y = canvas.height / 2;
+}
+
 function multipleSplats (amount) {
     for (let i = 0; i < amount; i++) {
         const color = [Math.random() * 10, Math.random() * 10, Math.random() * 10];
@@ -640,6 +673,119 @@ function resizeCanvas () {
         initFramebuffers();
     }
 }
+function test () {
+
+  pointers[0].down = true;
+  pointers[0].color = [0.2, 0.2, 0.2];
+  pointers[0].moved = pointers[0].down;
+  pointers[0].dx = motionDX;
+  pointers[0].dy = motionDY;
+  pointers[0].x = motionX;
+  pointers[0].y = motionY;
+};
+
+var frame2;
+var frame1;
+
+var threshold = 50; // How different must a pixel be to be a "motion" pixel
+var motionX1 = 0;
+var motionY1 = 0;
+var motionX2 = 0;
+var motionY2 = 0;
+var motionX = 0;
+var motionY = 0;
+var motionDX = 0;
+var motionDY = 0;
+
+function setup() {
+  createCanvas(canvas.width, canvas.height);
+  pixelDensity(0.1);
+
+  frame2 = createCapture(VIDEO);
+  frame2.size(canvas.width, canvas.height);
+  frame2.hide();
+  frame1 = createImage(frame2.width, frame2.height, RGB);
+}
+
+function draw() {
+  setTimeout(function(){}, 2000);
+
+  frame2.loadPixels();
+  frame1.loadPixels();
+  // image(frame1, 0, 0);
+
+  var count = 0;
+  var avgX = 0;
+  var avgY = 0;
+
+  // Begin loop to walk through every pixel
+  loadPixels();
+  for (var x = 0; x < frame2.width; x++) {
+    for (var y = 0; y < frame2.height; y++) {
+
+      // Step 1, what is the location into the array
+      var loc = (x + y * frame2.width) * 4;
+
+      // Step 2, what is the previous color
+      var r1 = frame1.pixels[loc   ];
+      var g1 = frame1.pixels[loc + 1];
+      var b1 = frame1.pixels[loc + 2];
+
+      // Step 3, what is the current color
+      var r2 = frame2.pixels[loc   ];
+      var g2 = frame2.pixels[loc + 1];
+      var b2 = frame2.pixels[loc + 2];
+
+      // Step 4, compare colors (previous vs. current)
+      var diff = distSq(r1, g1, b1, r2, g2, b2);
+      //console.log(diff);
+      // Step 5, How different are the colors?
+      // If the color at that pixel has changed, then there is motion at that pixel.
+      if (diff > threshold*threshold) {
+        // If motion, display black
+        //stroke(255);
+        //strokeWeight(1);
+        //point(x, y);
+        avgX += x;
+        avgY += y;
+        count++;
+        pixels[loc] = 0;
+        pixels[loc+1] = 0;
+        pixels[loc+2] = 0;
+        pixels[loc+3] = 255;
+      } else {
+        // If not, display white
+        pixels[loc] = 255;
+        pixels[loc+1] = 255;
+        pixels[loc+2] = 255;
+        pixels[loc+3] = 255;
+      }
+    }
+  }
+
+  updatePixels();
+  // We only consider the color found if its color distance is less than 10.
+  // This threshold of 10 is arbitrary and you can adjust this number depending on how accurate you require the tracking to be.
+  if (count > 0) {
+    motionX2 = avgX / count;
+    motionY2 = avgY / count;
+    // Draw a circle at the tracked pixel
+  }
+
+  motionX = lerp(motionX1, motionX2, 0.1);
+  motionY = lerp(motionY1, motionY2, 0.1);
+  motionDX = motionX2-motionX1;
+  motionDY = motionY2-motionY1;
+  motionX1 = motionX;
+  motionY1 = motionY;
+  frame1.copy(frame2, 0, 0, frame2.width, frame2.height, 0, 0, frame1.width, frame1.height); // Before we read the new frame, we always save the previous frame for comparison!
+}
+
+function distSq(x1, y1, z1, x2, y2, z2) {
+  var d = (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1);
+  return d;
+}
+
 
 // Here we want input from camera.
 canvas.addEventListener('mousemove', (e) => {
