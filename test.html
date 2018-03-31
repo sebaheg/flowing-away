@@ -2,70 +2,77 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta content="stuff, to, help, search, engines, not" name="keywords">
-<meta content="What this page is about." name="description">
-<meta content="Display Webcam Stream" name="title">
 <title>Display Webcam Stream</title>
-
-<style>
-#container {
-    margin: 0px auto;
-    width: 500px;
-    height: 375px;
-    border: 10px #333 solid;
-}
-#videoElement {
-    width: 500px;
-    height: 375px;
-    background-color: #666;
-}
-</style>
 </head>
 
 <body>
-<video autoplay></video>
 
+<video id='video' width='300' height='250' autoplay></video>
 <canvas id='canvas' width='300' height='250'></canvas>
+
 <script language='javascript'>
-  var video = document.querySelector('video');
   var canvas = document.getElementById('canvas');
-  var ctx = canvas.getContext('2d');
-  //ctx.drawImage(video,0,0,300,250);
+  var context = canvas.getContext('2d');
+  var video = document.getElementById('video');
+  var vendorURL = window.URL || window.webkitURL;
 
-  var data = ctx.getImageData(0,0,canvas.width,canvas.height);
-  console.log("data before the loop", data)
-  console.log("data in data", data.data);
-  console.log("data, data length", data.length);
+  const length = context.getImageData(0, 0, 300, 250).data.length;
 
-  // loop and make awesome stuff
+  // var data0 = Array.apply(null, new Array(length)).map(Number.prototype.valueOf,0);
+  var data0 = Array(length+1).join('0').split('').map(parseFloat)
 
-  // for (var i=0; i<data.data.length; i++) {
-  //   if (data.data[i].value < 180) {
-  //     run awesome function data.data.i.value.x
-  //
-  //   }
-  // }
+  console.log('test1')
 
-  // for(n=0; n<data.width*data.height; n++) {
-  //       var index = n*4;
-  //       data.data[index+0] = 255-data.data[index+0];
-  //       data.data[index+1] = 255-data.data[index+1];
-  //       data.data[index+2] = 255-data.data[index+2];
-  //   }
-  //
-  // console.log("data after the loop", data)
-  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+  navigator.getMedia = navigator.getUserMedia ||
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia ||
+                       navigator.oGetUserMedia;
 
-  if (navigator.getUserMedia) {
-      navigator.getUserMedia({video: true}, handleVideo, videoError);
-  }
+  navigator.getMedia({video: true, audio: false}, handleVideo, videoError);
+
+  video.addEventListener('play', function() {
+    draw(this, context, 300, 250, data0)
+  }, false);
 
   function handleVideo(stream) {
-      video.src = window.URL.createObjectURL(stream);
+      video.src = vendorURL.createObjectURL(stream);
+      video.play
   }
 
-  function videoError(e) {
+  function videoError(error) {
       // do something
+  }
+
+  function draw(video, context, width, height, data0) {
+    var image, data, i, r, b, g, brightness;
+    var data1 = data0;
+
+    context.drawImage(video, 0, 0, width, height);
+
+    image = context.getImageData(0, 0, width, height);
+    data = image.data;
+
+    for(i=0; i < data.length; i = i+4){
+      r = data[i];
+      b = data[i+1];
+      g = data[i+2];
+      brightness = (4*r + b + g) / 3;
+
+      data[i] = data[i+1] = data[i+2] = brightness;
+    }
+    for(i=0; i < data.length; i = i++){
+      data1[i] = data[i]
+    }
+
+    test = data0-data1
+    console.log(test)
+
+    data0 = data1
+    image.data = data;
+    context.putImageData(image, 0, 0);
+
+    setTimeout(draw, 10, video, context, width, height, data0);
   }
 </script>
 </body>
