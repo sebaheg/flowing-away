@@ -1,8 +1,7 @@
-// Initialize variables
-var frame2;
 var frame1;
+var frame2;
 
-var threshold = 50; // How different must a pixel be to be a "motion" pixel
+var threshold = 50;
 var motionX = 0;
 var motionY = 0;
 var lerpX = 0;
@@ -12,6 +11,8 @@ function setup() {
   createCanvas(320, 240);
   pixelDensity(1);
   frame2 = createCapture(VIDEO);
+  console.log(width)
+  console.log(height)
   frame2.size(width, height);
   // frame2.hide();
   // Create an empty image the same size as the video
